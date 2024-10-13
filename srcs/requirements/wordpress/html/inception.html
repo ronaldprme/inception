@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project README</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; margin: 20px; }
+        h1 { color: #333; }
+        h2 { color: #007BFF; margin-top: 20px; }
+        p { margin: 10px 0; }
+        ul { margin: 10px 0 20px 20px; }
+        pre { background: #f4f4f4; padding: 15px; border: 1px solid #ddd; overflow: auto; }
+        strong { color: #333; }
+        li { margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Project INCEPTION</h1>
+    <p>Este projeto tem como objetivo o aprendizado e utilização do Docker Compose para criação de soluções integradas de serviços rodando em contêineres, configurando um ambiente com múltiplos serviços, incluindo:</p>
+    <ul>
+        <li>Nginx - gestão de servidores</li>
+        <li>MariaDB - banco de dados</li>
+        <li>WordPress</li>
+    </ul>
+
+    <h2>Estrutura do Projeto</h2>
+    <ul>
+        <li><strong>Nginx:</strong> Servidor web que direciona o tráfego para os outros serviços.</li>
+        <li><strong>MariaDB:</strong> Banco de dados para o WordPress.</li>
+        <li><strong>WordPress:</strong> Plataforma de blog.</li>
+    </ul>
+
+    <h2>Como o Docker e o Docker Compose funcionam:</h2>
+    <ul>
+        <li>
+            <p>Docker é uma plataforma que permite criar, empacotar e executar aplicações em contêineres. Um contêiner é uma "caixa" leve que contém tudo o que sua aplicação precisa para funcionar, garantindo que rode da mesma forma em qualquer lugar.</p>
+        </li>
+        <li>
+            <p>O Docker Compose facilita a execução de múltiplos contêineres ao mesmo tempo, permitindo definir em um arquivo (docker-compose.yml) como cada serviço será configurado, simplificando o processo de inicialização e orquestração.</p>
+        </li>
+        <li>
+            <p><strong>Diferença entre uma imagem Docker com e sem Docker Compose:</strong></p>
+            <p>Sem Docker Compose: Você executa um contêiner diretamente a partir de uma imagem, gerenciando configurações manualmente.</p>
+            <p>Com Docker Compose: Um arquivo docker-compose.yml define e orquestra múltiplos contêineres com um único comando, simplificando a gestão.</p>
+        </li>
+        <li>
+            <p><strong>Benefícios do Docker em comparação com máquinas virtuais (VMs):</strong></p>
+            <ul>
+                <li><strong>Leveza:</strong> Contêineres compartilham o mesmo kernel do sistema operacional host, tornando-os mais eficientes.</li>
+                <li><strong>Velocidade:</strong> Contêineres iniciam em segundos, enquanto VMs podem levar minutos.</li>
+                <li><strong>Portabilidade:</strong> Contêineres podem ser transportados e executados em qualquer ambiente com Docker.</li>
+                <li><strong>Eficiência de recursos:</strong> Contêineres consomem menos memória e CPU do que VMs.</li>
+            </ul>
+        </li>
+        <li>
+            <p><strong>Pertinência da estrutura de diretórios:</strong></p>
+            <p>A estrutura proposta garante uma organização clara, facilitando a manutenção e desenvolvimento. Diretores específicos para configuração e volumes garantem melhor gestão.</p>
+        </li>
+    </ul>
+
+    <h2>Arquivo docker-compose.yml</h2>
+    <pre>
+      services:
+      mariadb:
+        build:
+          context: ./requirements/mariadb
+          dockerfile: Dockerfile
+        container_name: mariadb
+        image: mariadb:bullseye
+        environment:
+          MARIADB_ROOT_HOST: ${MARIADB_ROOT_HOST}
+          MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD} 
+          MARIADB_DATABASE: ${MARIADB_DATABASE} 
+          MARIADB_USER: ${MARIADB_USER}
+          MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+        volumes:
+          - "mariadb-volume:/var/lib/mysql"
+        networks:
+          - inception
+        restart: always
+      nginx:
+        build:
+          context: ./requirements/nginx
+          dockerfile: Dockerfile
+        container_name: nginx
+        image: nginx:bullseye
+        ports:
+          - "443:443"
+        depends_on:
+          - wordpress
+        volumes:
+          - "wordpress-volume:/var/www/wordpress"
+        networks:
+          - inception
+        restart: always
+      wordpress:
+        build:
+          context: ./requirements/wordpress
+          dockerfile: Dockerfile
+        container_name: wordpress
+        image: wordpress:bullseye
+        environment:
+          MARIADB_ROOT_HOST: ${MARIADB_ROOT_HOST}
+          MARIADB_DATABASE: ${MARIADB_DATABASE}
+          MARIADB_USER: ${MARIADB_USER}
+          MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+          DOMAIN_NAME: ${DOMAIN_NAME}
+          WP_TITLE: ${WP_TITLE}
+          WP_ADMIN_USR: ${WP_ADMIN_USR}
+          WP_ADMIN_PWD: ${WP_ADMIN_PWD}
+          WP_ADMIN_EMAIL: ${WP_ADMIN_EMAIL}
+          WP_USR: ${WP_USR}
+          WP_PWD: ${WP_PWD}
+          WP_EMAIL: ${WP_EMAIL}
+        depends_on:
+          - mariadb
+        volumes:
+          - "wordpress-volume:/var/www/wordpress"
+        networks:
+          - inception
+        restart: always
+    volumes:
+      mariadb-volume:
+        name: mariadb
+        driver: local
+        driver_opts:
+          type: 'none'
+          o: 'bind'
+          device: ${DB_HOST_VOLUME_PATH}
+      wordpress-volume:
+        name: wordpress
+        driver: local
+        driver_opts:
+          type: 'none'
+          o: 'bind'
+          device: ${WP_HOST_VOLUME_PATH}
+    networks:
+      inception:
+        driver: bridge
+        name: inception
+    </pre>
+
+    <h2>Direcionamento dos Blocos location no nginx.conf</h2>
+    <ul>
+        <li><strong>/</strong>: Direciona para o diretório raiz do WordPress.</li>
+    </ul>
+</body>
+</html>
